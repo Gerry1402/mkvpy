@@ -1,0 +1,379 @@
+import os
+import re
+import subprocess
+from typing import Iterable
+
+import cv2
+from pymkv import MKVAttachment as mkva
+from pymkv import MKVFile as mkvf
+from pymkv import MKVTrack as mkvt
+from rich.progress import Progress
+
+idiomas = ['Català', 'Español', 'English', '日本語', 'Italiano', 'Français']
+iso6392 = {'cat': 'Català', 'spa': 'Español', 'eng': 'English', 'jpn': '日本語', 'ita': 'Italiano', 'fra': 'Français'}
+info_idiomas = {
+    'Català': {
+        'iso639-2': 'cat',
+        'iso639-1': 'ca',
+        'subtitulos': 'Subtítols',
+        'subtitulos_forzados': 'Subtítols Forçats'
+        },
+    'Español': {
+        'iso639-2': 'spa',
+        'iso639-1': 'es',
+        'subtitulos': 'Subtítulos',
+        'subtitulos_forzados': 'Subtítulos Forzados'
+        },
+    'English': {
+        'iso639-2': 'eng',
+        'iso639-1': 'en',
+        'subtitulos': 'Subtitles',
+        'subtitulos_forzados': 'Subtitles Forced'
+        },
+    '日本語': {
+        'iso639-2': 'jpn',
+        'iso639-1': 'ja',
+        'subtitulos': '字幕',
+        'subtitulos_forzados': '強制字幕'
+        },
+    'Italiano': {
+        'iso639-2': 'ita',
+        'iso639-1': 'it',
+        'subtitulos': 'Sottotitoli',
+        'subtitulos_forzados': 'Sottotitoli Forzati'
+        },
+    'Français': {
+        'iso639-2': 'fra',
+        'iso639-1': 'fr',
+        'subtitulos': 'Sous-titres',
+        'subtitulos_forzados': 'Sous-titres Forcés'
+        },
+}
+
+class MKV: #Clase para archivos MKV
+    """Clase para manejar archivos MKV de manera sencilla y organizada.\n
+    Se pueden obtener detalles de las pistas, idiomas, eliminar o conservar pistas, reordenar pistas, establecer pistas predeterminadas, renombrar pistas y muxear el archivo.\n
+    """
+
+    def __init__(self, archivo_mkv:str):
+        self.dir: str = archivo_mkv
+        self.archivo = mkvf(self.dir)
+        self.lenguajes = [track.language for track in self.archivo.tracks]
+        self.subtitulos = []
+        self.audios = []
+        self.nombre: str = os.path.splitext(os.path.basename(self.dir))[0]
+        self.carpeta: str = os.path.join(os.path.dirname(self.dir), self.nombre)
+        self.cap = cv2.VideoCapture(self.dir)
+        self.ancho: int = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.alto: int = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.nuevo_ancho_alto: list[str] | None = None
+        self.frames_totales: int = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps: float = self.cap.get(cv2.CAP_PROP_FPS)
+        self.tiempo_total: float = int(self.frames_totales / self.fps * 100)/100
+        self.split_inicio: bool | None = None
+        self.split_final: bool | None = None
+
+    def detalles(self, track_types: str | list[str] | None = None) -> list[dict]:
+        """
+        Esta funcion permite obtener los detalles de las pistas de un archivo mkv de manera fácil y organizada.\n
+        detalles(type = ['audio', 'subtitles', ...])\n
+        detalles(type = 'subtitles')
+
+        Args:
+            type (str or list[str]], optional): Tipos de archivo que se quieran analizar. Las opciones son 'video', 'audio' y 'subtitles'
+
+        Returns:
+            list[dict]: El resultado es una lista ordenada en la que aparecen las categrías 'id', 'name', 'type' y 'codec'. Dependiendo del tipo de pista, se añaden 'language' y/o 'forced'
+        """
+        detalles_tracks = []
+
+        if isinstance(track_types, str):
+            track_types = [track_types]
+
+        for track in self.archivo.tracks:
+
+            if isinstance(track_types, list) and track.track_type in track_types:
+                continue
+
+            info_track = {'id': track.track_id, 'name': track.track_name, 'type': track.track_type, 'codec': track.track_codec}
+            if track.track_type in ['audio', 'subtitles']:
+                info_track |= {
+                    'language': track.language,
+                    'default': track.default_track,
+                    'sync': track.sync,
+                }
+            if track.track_type == 'subtitles':
+                info_track['forced'] = track.forced_track
+            detalles_tracks.append(info_track)
+
+        return detalles_tracks
+    
+    def idiomas(self, idiom: dict[int, str], forz: list[int]):
+        """ 
+        Método para establecer los idiomas i las pistas que son forzadas.\n
+        idiomas( idiom = {1: 'cat', 2: 'spa', 3: 'eng', ...}, forz = [3, 5])
+
+        Args:
+            idiom (Dict[int, str]): Diccionario en el que cada clave es un int (representando el id) y cada valor el idioma correspondiente.
+            forz (list[int]): Lista de ids de pistas forzadas. Sólo se especificarán las pistas forzadas, el resto se pondrán como falsas.
+        """
+
+        for id, idioma in idiom.items():
+            self.archivo.tracks[id].language = idioma
+            self.archivo.tracks[id].forced_track = id in forz
+    
+    def eliminar(self, tracks: int | list[int] | None = None, idiomas: list[str] | None = None, und: bool = False):
+        """
+        Método para eliminar las pistas especificadas. Las pistas con idiomas indefinidos no se eliminan por defecto.
+        eliminar(tracks = [5,3,4,2])
+        eliminar(idiomas = ['ita', 'fra'], und = True)
+
+        Args:
+            tracks (list[int]): Lista de tracks a eliminar.
+            idiomas (list[str]): Pistas de idiomas a eliminar.
+            und (bool): Añadir los 'undefined' a la lista de pistas a eliminar
+        """
+
+        if isinstance(tracks, (int, list)):
+            tracks = [tracks] if isinstance(tracks, int) else tracks
+            self.archivo.tracks = [track for id, track in enumerate(self.archivo.tracks) if id not in tracks]
+
+        else:
+            self.archivo.tracks = [track for track in self.archivo.tracks if track.language not in idiomas+(['und'] if und else [])]
+    
+    def conservar(self, tracks: int | list[int] | None = None, idiomas: list[str] | None = None, und: bool = True):
+        """
+        Método para conservar las pistas especificadas. Las pistas con idiomas indefinidos se conservan por defecto.
+        conservar(tracks = [5,3,4,2])
+        conservar(idiomas = ['cat', 'jpn'], und = False)
+
+        Args:
+            tracks (list[int]): Lista de tracks a conservar.
+            idiomas (list[str]): Pistas de idiomas a conservar.
+            und (bool): Añadir los 'undefined' a la lista de pistas a conservar
+        """
+
+        if tracks:
+            self.archivo.tracks = [track for id, track in enumerate(self.archivo.tracks) if id in [0] + tracks]
+
+        else:
+            self.archivo.tracks = [self.archivo.tracks[0]] + [track for track in self.archivo.tracks[1:] if track.language in idiomas+(['und'] if und else [])]
+
+    def reordenar(self, tracks: list[int] | None = None, idiomas: list[str] | None = None):
+        """
+        Método para organizar las pistas del archivo. Se recomienda utilizar sólo una variable, ya que si se utilizan las dos se estaría reordenando las pistas del archivo dos veces.\n
+        ordenar(tracks = [5, 3, 4, 2, 1, ...])\n
+        ordenar(idiomas = ['cat', 'jpn', 'eng', 'spa', ...])
+
+        Args:
+            tracks (list[int]): Lista de ints en la que el valor es el id original de la pista del archivo y su posición dentro la lista és la nueva posición que tomará.
+            idiomas (list[str]): Lista de idiomas en formato ISO 639-2. Primero situará los idiomas en el orden correspondiente y luego los subtitulos, priorizando entre los del mismo idioma los forzados.
+        """
+
+        if tracks:
+            for i in range(len(tracks)):
+                if tracks[i] == i+1:
+                    continue
+                self.archivo.swap_tracks(tracks[i], i+1)
+                actual, nuevo = i, tracks.index(i+1)
+                tracks[actual], tracks[nuevo] = tracks[nuevo], tracks[actual]
+
+        idiomas.append('und')
+        audios = []
+        subtitulos = []
+        self.audios = []
+        self.subtitulos = []
+        for track in self.archivo.tracks:
+            if track.track_type == 'audio':
+                audios.append(track)
+                self.audios.append(track.language) if track.language not in self.audios else None
+            elif track.track_type == 'subtitles':
+                subtitulos.append(track)
+                self.subtitulos.append(track.language) if track.language not in self.subtitulos else None
+        audios.sort(key = lambda x: (idiomas.index(x.language)))
+        self.audios.sort(key = lambda x: (idiomas.index(x)))
+        subtitulos.sort(key = lambda x: (idiomas.index(x.language), not x.forced_track))
+        self.subtitulos.sort(key = lambda x: (idiomas.index(x)))
+        self.archivo.tracks = [self.archivo.tracks[0]] + audios + subtitulos
+    
+    def predeterminar(self, tracks: list[int] | None = None, audio: str = '', subtitulo: str = '', forzado: bool | None = None, auto: bool = False):
+        """
+        Método para definir las pistas predeterminadas.\n
+        predeterminar(tracks = [5, 3, 4, 2, 1, ...])\n
+        predeterminar(audio = 'cat', subtitulo = 'spa', forzado = False)\n
+        predeterminar(auto = True, forzado = False)
+
+        Args:
+            tracks (list[int]): Lista de pistas del archivo.
+            audio (str): Idioma de audio que se pondrá como el predeterminado
+            subtitulo (str): Idioma de subtitulo que se pondrá como el predeterminado.
+            forzado (bool): Especificar si el subtitulo a establecer como predeterminado es forzado o no. Por defecto en True.
+            auto (bool): Variable para activar las pistas predeterminadas de forma automática una vez se han ordenado las pistas tambiés de forma automática.
+        """
+        if tracks:
+            for id in tracks:
+                self.archivo.tracks[id].default_track = id in tracks
+            return
+
+        audio_predeterminado = audio or (self.audios[0] if auto else None)
+        subtitulo_predeterminado = subtitulo or (self.subtitulos[0] if auto else None)
+
+        for id, track in enumerate(self.archivo.tracks[1:], start=1):
+            if track.track_type == 'audio':
+                self.archivo.tracks[id].default_track = self.archivo.tracks[id].language == audio_predeterminado
+            elif track.track_type == 'subtitles':
+                self.archivo.tracks[id].default_track = self.archivo.tracks[id].language == subtitulo_predeterminado and track.forced_track == forzado
+
+
+    def renombrar(self, titulo:str = '', nombres: dict[int, str] | None = None, auto:bool = False):
+        """
+        Método para renombrar los diferentes tracks. Utilizar la variable de 'nombres' o 'auto' únicamente. Especificar el título es opcional.\n
+        renombrar(nombres: {1: 'AAC', 2: 'Subtítulos', 2: 'AAC'}, titulo = 'Ejemplo')\n
+        renombrar(auto = True, titulo = 'Ejemplo')
+
+        Args:
+            titulo (str): Título que tendrá el archivo.
+            nombres (Dict[int, str]): Id del track y su nombre correspondiente.
+            auto: Opción para renombrar todas las pistas de manera automática. Se necesita haber especificado el idioma de todas las pistas y haber marcado las que son forzadas.
+        """
+
+        if titulo:
+            self.archivo.title = titulo
+
+        if nombres:
+            for id, nombre in nombres.items():
+                self.archivo.tracks[id].track_name = nombre
+
+        elif auto:
+
+            self.archivo.tracks[0].track_name = f'HEVC {self.ancho}×{self.alto}'
+
+            for id, track in enumerate(self.archivo.tracks[1:], start=1):
+
+                if track.track_type == 'audio':
+                    nombre = track.track_codec
+
+                elif track.track_type == 'subtitles':
+                    nombre = info_idiomas.get(iso6392.get(track.language), track.track_name)['subtitulos']
+                    if track.forced_track:
+                        nombre = info_idiomas.get(iso6392.get(track.language), track.track_name)['subtitulos_forzados']
+                        nombre = nombre.capitalize()
+
+                self.archivo.tracks[id].track_name = nombre
+
+    def sincronizar(self, tiempo:int, tracks: list[int] | None = None, audios: list[str] | None = None, subtitulos: list[str] | None = None, forz: dict[str, bool] | None = None):
+        """
+        Método para ajustar o sincronizar las pistas al tiempo especificado. Utilizar la variable 'tracks' o las variables 'audios', 'subtitulos' y 'forz'.\n
+        sincronizar(tiempo=350, tracks([1, 2, 4, 5]))\n
+        sincronizar(tiempo=350, subtitulos = ['eng', 'cat'], forz = {'eng': True})
+
+        Args:
+            tiempo (int): Tiempo en milisegundos. Puede ser negativo (para avanzar) o positivo (para retrasar)
+            tracks (list[int], optional): Lista de pistas a ajustar.
+            audios (list[str], optional): Lista de idiomas de audios a ajustar.
+            subtitulos (list[str], optional): Lista de idiomas de subtitulos a ajustar.
+            forz (dict, optional): Diccionario de los idiomas de los subtitulos. En caso de que sólo haya que ajustar una pista en concreto de un idioma, hay que especificar si esta es la forzada (siendo 'True' la forzada y 'False' la no forzada). En caso contrario no utilizar esta variable.
+        """
+
+        if tracks:
+            for id in tracks:
+                self.archivo.tracks[id].sync = tiempo
+
+        elif audios or subtitulos:
+            for id, track in enumerate(self.archivo.tracks[1:], start=1):
+                if audios and track.track_type == 'audio' and track.language in audios:
+                    self.archivo.tracks[id].sync = tiempo
+                elif subtitulos and track.track_type == 'subtitles' and track.language in subtitulos:
+                    if not forz:
+                        self.archivo.tracks[id].sync = tiempo
+                    elif (self.archivo.tracks[id].forced_track == forz[self.archivo.tracks[id].language]) or forz.get(self.archivo.tracks[id].language, True):
+                        self.archivo.tracks[id].sync = tiempo
+        else:
+            for id in range(1, len(self.archivo.tracks)+1):
+                self.archivo.tracks[id].sync = tiempo
+    
+    def recortar(self, inicio: bool = False, final: bool = False, frames: int | list[int] | None = None, segundos: int | list[int] | None = None):
+        """
+        Método para recortar el archivo. Necesario indicar si el recorte afecta a la primarsa parte o la segunda y utilizar el método de frames o segundos.
+
+        Args:
+            inicio (bool, optional): Variable para saber si se recorta el inicio o no. Si se activa, se eliminará el archivo que contenga desde el instante 0 al especificado.
+            final (bool, optional): Variable para saber si se recorta el final o no. Si se activa, se eliminará el archivo que contenga desde el último instante especificado al final.
+            frames (Union[int, list[int]], optional): Variable en la que se especifica el numero de los frames por los que se separa el archivo. Puede ser un único valor o varios
+            segundos (Union[int, list[int]], optional): Variable en la que se especifica el tiempo por el que se separa el archivo. Puede ser un único valor o varios
+        """
+
+        if not inicio and not final:
+            quit('Especificar si se separa para recortar la parte del inicio o la parte del final')
+        self.split_inicio, self.split_final = inicio, final
+
+        if frames:
+            self.archivo.split_frames(frames)
+        elif segundos:
+            self.archivo.split_duration(segundos)
+    
+    def redimensionar(self, ancho:int, alto:int):
+        if ancho == self.ancho and alto == self.alto:
+            return
+        self.nuevo_ancho_alto = ['--display-dimensions', f'0:{ancho}x{alto}']
+        self.archivo.tracks[0].track_name = f'HEVC {ancho}×{alto} (R)'
+    
+    def multiplexar(self, output: str | None = None):
+        """ 
+        Función para muxear el archivo final.\n
+        Si no se especifica una carpeta, se una con el mismo nombre del archivo en la ruta de este y se pone ahí el resultado.
+
+        Args:
+            output (str, optional): _description_. Defaults to None.
+        """
+
+        if not output:
+            os.makedirs(self.carpeta, exist_ok=True)
+            output = self.carpeta
+
+        output = os.path.join(output, f'{self.nombre}.mkv')
+
+        comando = self.archivo.command(output_path=output, subprocess=True)
+
+        if self.nuevo_ancho_alto:
+            comando = comando[:3] + self.nuevo_ancho_alto + comando[3:]
+
+        #subprocess.run(comando)
+
+        process = subprocess.Popen(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+
+        pattern = re.compile(r"[A-Za-z]+:\s([0-9]+)%", re.IGNORECASE)
+        for line in process.stdout:
+            if match := pattern.search(line):
+                yield int(match[1])
+
+        if os.path.isfile(os.path.join(os.path.dirname(output), f'{self.nombre}-003.mkv')):
+            archivos = {'-001.mkv', '-002.mkv', '-003.mkv'}
+            eliminar = {'-001.mkv', '-003.mkv'}
+        elif os.path.isfile(os.path.join(os.path.dirname(output), f'{self.nombre}-002.mkv')):
+            archivos = {'-001.mkv', '-002.mkv'}
+            eliminar = {'-002.mkv'} if self.split_inicio else {'-001.mkv'}
+        else:
+            return
+
+        for eliminacion in eliminar:
+            os.remove(os.path.join(os.path.dirname(output), f'{self.nombre}{eliminacion}'))
+
+        conservar = list(archivos - eliminar)[0]
+
+        os.rename(os.path.join(os.path.dirname(output), f'{self.nombre}{conservar}'), output)
+    
+    def separar_frames(self, output: str, inicio: int, intervalo: int = 4):
+
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, inicio)
+
+        for i, _ in enumerate(range(int(intervalo*self.fps)), start = int(inicio*self.fps)):
+            _, frame = self.cap.read()
+            frame_filename = os.path.join(output, f"frame_{str(i).zfill(3)}.png")
+            cv2.imwrite(frame_filename, frame)
+
+    def __str__(self):
+        return self.archivo.title
+    
+    def __call__(self):
+        return self.archivo.title
