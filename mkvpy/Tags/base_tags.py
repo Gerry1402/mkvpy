@@ -2,8 +2,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# trunk-ignore(bandit/B405)
 from xml.etree import ElementTree as ET
-from xml.etree.ElementTree import Element, ElementTree
+
+# trunk-ignore(bandit/B405)
+from xml.etree.ElementTree import Element
+
+from defusedxml import ElementTree as DefusedET
 
 from mkvpy import MKVToolNix
 from mkvpy.Tags.info_tags import info_tags, info_targets, order_tags, tags_by_target
@@ -43,7 +49,11 @@ class BaseTags(MKVToolNix, ABC):
                 yield (target_int, tag, tag_value)
 
     def __len__(self) -> int:
-        return sum(1 for attr, value in self.__dict__.items() if attr in info_tags and value is not None)
+        return sum(
+            1
+            for attr, value in self.__dict__.items()
+            if attr in info_tags and value is not None
+        )
 
     def __bool__(self) -> bool:
         return bool(len(self))
@@ -64,7 +74,9 @@ class BaseTags(MKVToolNix, ABC):
         output_path: str | Path | None = None,
         overwrite: bool = False,
     ) -> None:
-        output_file = output_path or self.file_path.with_name(f"{self.file_path.stem}_tags.xml")
+        output_file = output_path or self.file_path.with_name(
+            f"{self.file_path.stem}_tags.xml"
+        )
         output_file = unique_path(output_file) if overwrite else output_file
         self.execute_command("extract", self.file_path, "tags", output_file)
 
@@ -73,13 +85,15 @@ class BaseTags(MKVToolNix, ABC):
 
     def extract_tags_as_dict(self, file_path: str | Path) -> dict[int, Any]:
         xml_content = self.extract_tags_as_string(file_path)
-        root = ET.fromstring(xml_content)
+        root = DefusedET.fromstring(xml_content)
         parsed_tags: dict[int, Any] = {}
 
         for tag_element in root.findall("Tag"):
             target_value = 50
             if v := tag_element.findtext("./Targets/TargetTypeValue"):
-                target_value = int(v or 0) if v.isdigit() and v in info_targets.values() else 50
+                target_value = (
+                    int(v or 0) if v.isdigit() and v in info_targets.values() else 50
+                )
             elif t := tag_element.findtext("./Targets/TargetType"):
                 target_value = info_targets.get(t, 50)
 
@@ -88,10 +102,14 @@ class BaseTags(MKVToolNix, ABC):
                 if key is None or tag is None:
                     continue
                 name = tags_by_target.get(target_value, {}).get(key, "")
-                parsed_tags.setdefault(target_value, {}).setdefault(name, []).append(tag)
+                parsed_tags.setdefault(target_value, {}).setdefault(name, []).append(
+                    tag
+                )
 
         if not parsed_tags:
-            print("No tags found in the MKV file. Make sure to follow the official MKV tagging guidelines.")
+            print(
+                "No tags found in the MKV file. Make sure to follow the official MKV tagging guidelines."
+            )
         return parsed_tags
 
     def _mount_xml(self) -> Element:
@@ -114,18 +132,30 @@ class BaseTags(MKVToolNix, ABC):
         output_path: str | Path | None = None,
         overwrite: bool = False,
     ) -> None:
-        output_file = output_path or self.file_path.with_name(f"{self.file_path.stem}_tags.xml")
+        output_file = output_path or self.file_path.with_name(
+            f"{self.file_path.stem}_tags.xml"
+        )
         output_file = unique_path(output_file) if overwrite else output_file
-        ElementTree(self._mount_xml()).write(str(output_file), encoding="utf-8", xml_declaration=True)
+        ET.ElementTree(self._mount_xml()).write(
+            str(output_file), encoding="utf-8", xml_declaration=True
+        )
 
     def delete_tags(self) -> None:
         self.execute_command("propedit", self.file_path, "--tags", "all:")
 
     def add_tags(self) -> None:
-        with temp_file(suffix=".xml", content=self.create_tags_as_string()) as temp_path:
-            self.execute_command("propedit", self.file_path, "--tags", f"global:{temp_path}")
+        with temp_file(
+            suffix=".xml", content=self.create_tags_as_string()
+        ) as temp_path:
+            self.execute_command(
+                "propedit", self.file_path, "--tags", f"global:{temp_path}"
+            )
 
     def apply_tags(self) -> None:
         self.delete_tags()
-        with temp_file(suffix=".xml", content=self.create_tags_as_string()) as temp_path:
-            self.execute_command("propedit", self.file_path, "--tags", f"global:{temp_path}")
+        with temp_file(
+            suffix=".xml", content=self.create_tags_as_string()
+        ) as temp_path:
+            self.execute_command(
+                "propedit", self.file_path, "--tags", f"global:{temp_path}"
+            )

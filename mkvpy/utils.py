@@ -8,7 +8,11 @@ from typing import Any
 
 def check_executable_path(executable_path: str | Path) -> Path | None:
 
-    executable_path = Path(executable_path) if not isinstance(executable_path, Path) else executable_path
+    executable_path = (
+        Path(executable_path)
+        if not isinstance(executable_path, Path)
+        else executable_path
+    )
 
     if executable_path.exists() and executable_path.is_file():
         return Path(executable_path)
@@ -23,6 +27,7 @@ def check_file_path(file_path: str | Path) -> Path:
         return Path(file_path)
 
     raise FileNotFoundError(f"File '{file_path}' does not exist or is not a file.")
+
 
 def unique_path(base_path: str | Path) -> Path:
     base = Path(base_path)
@@ -70,6 +75,7 @@ def string_to_number(s: str):
             continue
         else:
             return action(s.strip())
+
 
 def number_to_string(number: int | float | str | None) -> str | None:
     """Convert a number to a string, preserving its type."""

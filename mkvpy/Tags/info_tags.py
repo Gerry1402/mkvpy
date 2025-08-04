@@ -54,9 +54,17 @@ info_tags: dict[str, dict[str, str | tuple | bool | int]] = {
     "producer_executive": {"name": "EXECUTIVE_PRODUCER", "unique": False, "target": 50},
     "coproducer": {"name": "COPRODUCER", "unique": False, "target": 50},
     # Department Heads
-    "director_photography": {"name": "DIRECTOR_OF_PHOTOGRAPHY", "unique": False, "target": 50},
+    "director_photography": {
+        "name": "DIRECTOR_OF_PHOTOGRAPHY",
+        "unique": False,
+        "target": 50,
+    },
     "editor": {"name": "EDITOR", "unique": False, "target": 50},
-    "designer_production": {"name": "PRODUCTION_DESIGNER", "unique": False, "target": 50},
+    "designer_production": {
+        "name": "PRODUCTION_DESIGNER",
+        "unique": False,
+        "target": 50,
+    },
     "designer_costume": {"name": "COSTUME_DESIGNER", "unique": False, "target": 50},
     # Additional Crew
     "director_assistant": {"name": "ASSISTANT_DIRECTOR", "unique": False, "target": 50},

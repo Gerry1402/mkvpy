@@ -13,17 +13,16 @@ class Audio(Track):
         default: bool = False,
         forced: bool = False,
         sync: int = 0,
-        
         # flags
         original: bool = False,
         visual_impaired: bool = False,
         commentary: bool = False,
     ):
         super().__init__(file_path, id, name, language, default, forced, sync)
-        
 
     def channels(self):
         return self.info_track.get("properties", {}).get("audio_channels", 0)
+
     def frequency(self):
         return self.info_track.get("properties", {}).get("audio_sampling_frequency", 0)
 
