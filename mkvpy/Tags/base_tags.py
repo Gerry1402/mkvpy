@@ -50,9 +50,8 @@ class BaseTags(MKVToolNix, ABC):
 
     def __len__(self) -> int:
         return sum(
-            1
+            attr in info_tags and value is not None
             for attr, value in self.__dict__.items()
-            if attr in info_tags and value is not None
         )
 
     def __bool__(self) -> bool:
