@@ -1,5 +1,6 @@
-from mkvpy.Tracks.track import Track
 from pathlib import Path
+
+from mkvpy.Tracks.track import Track
 
 
 class Subtitle(Track):

@@ -1,117 +1,83 @@
-from pathlib import Path
+from dataclasses import dataclass
 
 from mkvpy.Tags.base_tags import BaseTags
 
 
+@dataclass
 class EpisodeTags(BaseTags):
-    """Episode-specific tag management class."""
+    # Series level properties
+    series: str | None = None
+    seasons_number: int | None = None
+    series_imdb: str | None = None
+    series_tmdb: str | None = None
+    series_tvdb: str | None = None
+    series_description: str | None = None
+    series_synopsis: str | None = None
+    series_summary: str | None = None
 
-    def __init__(self, file_path: str | Path, language_ietf: str = "und") -> None:
-        super().__init__(file_path, language_ietf)
+    # Season level properties
+    season: str | None = None
+    season_number: int | None = None
+    episodes_season_number: int | None = None
 
-        # Series level properties
-        self.series: str = ""
-        self.seasons_number: int = 0
-        self.series_imdb: str = ""
-        self.series_tmdb: str = ""
-        self.series_tvdb: str = ""
+    # Episode level properties
+    title: str | None = None
+    subtitle: str | None = None
+    episode_number: int | None = None
+    episode_imdb: str | None = None
+    episode_tmdb: str | None = None
+    episode_tvdb: str | None = None
 
-        # Season level properties
-        self.season: str = ""
-        self.season_number: int = 0
-        self.episodes_season_number: int = 0
+    # Cast
+    actors_characters: list[tuple[str, str]] | None = None
 
-        # Episode level properties
-        self.title: str = ""
-        self.episode_number: int = 0
-        self.episode_imdb: str = ""
-        self.episode_tmdb: str = ""
-        self.episode_tvdb: str = ""
+    # Key Creative Roles
+    directors: list[str] | None = None
+    writers: list[str] | None = None
+    screenplayers: list[str] | None = None
 
-        # Cast and crew
-        self.directors: list[str] = []
-        self.directors_assistant: list[str] = []
-        self.directors_photography: list[str] = []
-        self.designers_production: list[str] = []
-        self.designers_costume: list[str] = []
-        self.actors_characters: list[tuple[str, str]] = []
-        self.writers: list[str] = []
-        self.screenplayers: list[str] = []
-        self.editors: list[str] = []
-        self.producers: list[str] = []
-        self.coproducers: list[str] = []
-        self.producers_executives: list[str] = []
-        self.distributors: list[str] = []
-        self.mastering_engineers: list[str] = []
-        self.productions_studio: list[str] = []
-        self.publishers: list[str] = []
-        self.locations_recording: list[str] = []
+    # Production Crew
+    producers: list[str] | None = None
+    producers_executives: list[str] | None = None
+    coproducers: list[str] | None = None
 
-        # Content metadata
-        self.genres: list[str] = []
-        self.keywords: list[str] = []
-        self.moods: list[str] = []
-        self.rating: float = 0.0
-        self.content_type: str = ""
-        self.subject: str = ""
-        self.description: str = ""
-        self.synopsis: str = ""
-        self.summary: str = ""
-        self.comment: str = ""
+    # Department Heads
+    directors_photography: list[str] | None = None
+    editors: list[str] | None = None
+    designers_production: list[str] | None = None
+    designers_costume: list[str] | None = None
 
-        # Dates
-        self.date_written: int = 0
-        self.date_released: int = 0
+    # Additional Crew
+    directors_assistant: list[str] | None = None
+    mastering_engineers: list[str] | None = None
 
-    def _ordered_info(self) -> dict[tuple[int, str], list[tuple]]:
+    # Production & Distribution
+    productions_studio: list[str] | None = None
+    distributors: list[str] | None = None
+    publishers: list[str] | None = None
+    locations_recording: list[str] | None = None
+
+    # Content Classification & Metadata
+    genres: list[str] | None = None
+    rating: float | None = None
+    content_type: str | None = None
+    subject: str | None = None
+    keywords: list[str] | None = None
+    moods: list[str] | None = None
+
+    # Descriptions
+    description: str | None = None
+    synopsis: str | None = None
+    summary: str | None = None
+    comment: str | None = None
+
+    # Dates
+    date_written: int | None = None
+    date_released: int | None = None
+
+    def __post_init__(self):
+        pass
+
+    def _info_targets(self) -> dict[int, str]:
         """Return ordered episode tag information."""
-        return {
-            (70, "COLLECTION"): [
-                ("TITLE", self.series),
-                ("TOTAL_PARTS", self.seasons_number),
-                ("IMDB", self.series_imdb),
-                ("TMDB", self.series_tmdb),
-                ("TVDB", self.series_tvdb),
-            ],
-            (60, "SEASON"): [
-                ("TITLE", self.season),
-                ("PART_NUMBER", self.season_number),
-                ("TOTAL_PARTS", self.episodes_season_number),
-            ],
-            (50, "EPISODE"): [
-                ("TITLE", self.title),
-                ("PART_NUMBER", self.episode_number),
-                ("IMDB", self.episode_imdb),
-                ("TMDB", self.episode_tmdb),
-                ("TVDB", self.episode_tvdb),
-                ("DIRECTOR", self.directors),
-                ("ASSISTANT_DIRECTOR", self.directors_assistant),
-                ("DIRECTOR_OF_PHOTOGRAPHY", self.directors_photography),
-                ("PRODUCTION_DESIGNER", self.designers_production),
-                ("COSTUME_DESIGNER", self.designers_costume),
-                ("ACTOR", self.actors_characters),
-                ("WRITTEN_BY", self.writers),
-                ("SCREENPLAY_BY", self.screenplayers),
-                ("EDITOR", self.editors),
-                ("PRODUCER", self.producers),
-                ("COPRODUCER", self.coproducers),
-                ("EXECUTIVE_PRODUCER", self.producers_executives),
-                ("DISTRIBUTED_BY", self.distributors),
-                ("MASTERED_BY", self.mastering_engineers),
-                ("PRODUCTION_STUDIO", self.productions_studio),
-                ("PUBLISHER", self.publishers),
-                ("RECORDING_LOCATION", self.locations_recording),
-                ("GENRE", self.genres),
-                ("KEYWORDS", self.keywords),
-                ("MOOD", self.moods),
-                ("RATING", self.rating),
-                ("CONTENT_TYPE", self.content_type),
-                ("SUBJECT", self.subject),
-                ("DESCRIPTION", self.description),
-                ("SYNOPSIS", self.synopsis),
-                ("SUMMARY", self.summary),
-                ("COMMENT", self.comment),
-                ("DATE_WRITTEN", self.date_written),
-                ("DATE_RELEASED", self.date_released),
-            ],
-        }
+        return {70: "COLLECTION", 60: "SEASON", 50: "EPISODE"}

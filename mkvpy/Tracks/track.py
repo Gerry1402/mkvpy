@@ -1,5 +1,6 @@
-from mkvpy.mkv_tool_nix import MKVToolNix
 from pathlib import Path
+
+from mkvpy.mkv_tool_nix import MKVToolNix
 from mkvpy.utils import check_file_path, unique_path
 
 CODECID_EXT_TO_EXT: dict[str, str] = {
@@ -55,9 +56,9 @@ class Track(MKVToolNix):
 
         track_type = temp_instance.type
 
-        from .video import Video
         from .audio import Audio
         from .subtitles import Subtitle
+        from .video import Video
 
         track_classes: dict[str, type] = {
             "video": Video,
@@ -88,7 +89,7 @@ class Track(MKVToolNix):
         try:
             self.info_track = self.get_file_info(self.file_path).get("tracks", [])[id]
         except IndexError:
-            raise ValueError(f"Track with id {id} does not exist in file {self.file_path}.")
+            raise ValueError(f"Track with id {id} does not exist in file {self.file_path}.") from None
         self._id: int = id
 
         self.name: str = name or self.info_track["properties"].get("name", f"{self.type} {self.id}")

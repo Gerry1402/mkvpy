@@ -1,5 +1,7 @@
-from mkvpy.Tracks.track import Track
 from pathlib import Path
+
+from mkvpy.Tracks.track import Track
+
 
 def string_to_tuple(resolution: str) -> tuple[int, int]:
     """Convert a resolution string like '1920x1080' to a tuple (1920, 1080)."""
@@ -7,7 +9,7 @@ def string_to_tuple(resolution: str) -> tuple[int, int]:
         width, height = map(lambda x: int(x.strip()), resolution.split('x'))
         return width, height
     except ValueError:
-        raise ValueError(f"Invalid resolution format: {resolution}. Expected format is 'widthxheight'.")
+        raise ValueError(f"Invalid resolution format: {resolution}. Expected format is 'widthxheight'.") from None
 
 
 class Video(Track):

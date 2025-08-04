@@ -1,7 +1,7 @@
+import json
 import subprocess as sp
 from pathlib import Path
 from typing import Literal
-import json
 
 from mkvpy.utils import check_executable_path, check_file_path
 
