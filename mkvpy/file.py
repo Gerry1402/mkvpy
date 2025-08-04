@@ -1,6 +1,3 @@
-import json
-import subprocess as sp
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -17,12 +14,14 @@ class File(MKVToolNix):
 
         self.info_file: dict[str, Any] = self.get_file_info(self.file_path)
         self.title: str | None = self._container().get("title", None)
-        self._duration: float = self._container().get(
-            "duration", 0.0) / self._container().get("timestamp_scale", 1.0)/1000
+        self._duration: float = (
+            self._container().get("duration", 0.0)
+            / self._container().get("timestamp_scale", 1.0)
+            / 1000
+        )
 
     def _container(self) -> dict[str, Any]:
         return self.info_file.get("container", {}).get("properties", {})
-
 
     @property
     def duration(self) -> float:
@@ -40,4 +39,4 @@ if __name__ == "__main__":
     print(f"Title: {mkv.title}")
     print(f"Duration: {mkv.duration:.2f} seconds")
 
-    print(f"\n=== TAG INFORMATION ===")
+    print("\n=== TAG INFORMATION ===")

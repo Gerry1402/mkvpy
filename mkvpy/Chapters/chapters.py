@@ -10,12 +10,16 @@ class Chapters(MKVToolNix):
     def __init__(self, file_path: str):
         self._file_path = check_file_path(file_path)
         self._default_chapters = self._get_chapters_info()
-        self.chapters = self._default_chapters.copy()  # Copy default chapters to allow modifications
+        self.chapters = (
+            self._default_chapters.copy()
+        )  # Copy default chapters to allow modifications
 
     def _get_chapters_info(self) -> list[tuple[str, float]]:
         """Extract chapter information as a list of tuples."""
 
-        string_chapters: str = self.execute_command("extract", str(self._file_path), "chapters", "--simple")
+        string_chapters: str = self.execute_command(
+            "extract", str(self._file_path), "chapters", "--simple"
+        )
         chapters_info: list[tuple[str, float]] = []
         lines: list[str] = string_chapters.splitlines()
 
@@ -25,13 +29,21 @@ class Chapters(MKVToolNix):
 
         num_decimals: int = len(str(len(timestamp_lines)))
 
-        for i, (timestamp_line, name_line) in enumerate(zip(timestamp_lines, name_lines), start=1):
+        for i, (timestamp_line, name_line) in enumerate(
+            zip(timestamp_lines, name_lines), start=1
+        ):
 
-            chapter_name: str = name_line.split("=", 1)[1] if "=" in name_line else f"Chapter {str(i).zfill(num_decimals)}"
+            chapter_name: str = (
+                name_line.split("=", 1)[1]
+                if "=" in name_line
+                else f"Chapter {str(i).zfill(num_decimals)}"
+            )
 
             time_str: str = timestamp_line.split("=", 1)[1]
             parts: list[str] = time_str.split(":")
-            seconds: float = sum(float(part) * (60**i) for i, part in enumerate(reversed(parts)))
+            seconds: float = sum(
+                float(part) * (60**i) for i, part in enumerate(reversed(parts))
+            )
 
             chapters_info.append((chapter_name, seconds))
 

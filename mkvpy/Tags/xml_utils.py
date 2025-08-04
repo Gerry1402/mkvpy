@@ -6,7 +6,10 @@ def get_text_element(elem: ET.Element, tag: str) -> str | None:
     found_elem = (elem.findtext(tag) or "").strip()
     return " ".join(found_elem.split()) if found_elem else None
 
-def parse_single_tag(element: ET.Element) -> tuple[tuple | str | None, tuple | str | int | float | None]:
+
+def parse_single_tag(
+    element: ET.Element,
+) -> tuple[tuple | str | None, tuple | str | int | float | None]:
     """
     Parse a single tag element and return its name and value.
     If the tag has nested Simple elements, return a dictionary of name-value pairs.
@@ -22,14 +25,18 @@ def parse_single_tag(element: ET.Element) -> tuple[tuple | str | None, tuple | s
         pairs = [
             (name, value)
             for simple in element.findall("Simple")
-            if (name := get_text_element(simple, "Name")) and (value := get_text_element(simple, "String"))
+            if (name := get_text_element(simple, "Name"))
+            and (value := get_text_element(simple, "String"))
         ]
         name_x, value_x = zip(*pairs) if pairs else ([], [])
         return ((name_1, *name_x), (value_1, *value_x))
 
     return name_1, value_1
 
-def get_or_create_target(root: Element, target_type_value: int, target_type: str) -> Element:
+
+def get_or_create_target(
+    root: Element, target_type_value: int, target_type: str
+) -> Element:
 
     for tag in root.findall("Tag"):
         ttv = tag.findtext("Targets/TargetType")
@@ -43,11 +50,13 @@ def get_or_create_target(root: Element, target_type_value: int, target_type: str
 
     return new_tag
 
+
 def simple_tag(tag_name: str, tag_value: str | int | float) -> Element:
     element = ET.Element("Simple")
     ET.SubElement(element, "Name").text = tag_name
     ET.SubElement(element, "String").text = str(tag_value)
     return element
+
 
 def complex_tag(names: tuple[str], values: tuple[str]) -> Element:
     name_1, name_x = names[0], names[1:]
