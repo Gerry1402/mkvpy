@@ -6,7 +6,7 @@ from mkvpy.Tags.base_tags import BaseTags
 class MovieTags(BaseTags):
     """Movie-specific tag management class."""
 
-    def __init__(self, file_path: Path, language_ietf: str = "und") -> None:
+    def __init__(self, file_path: Path | None = None, language_ietf: str = "und") -> None:
         super().__init__(file_path, language_ietf)
 
         # Collection level properties
@@ -73,7 +73,7 @@ class MovieTags(BaseTags):
         # Dates
         self.date_written: int = 0
         self.date_released: int = 0
-        
+
         self.load_tags_to_attributes()
 
     def _info_targets(self) -> dict[int, str]:
@@ -83,7 +83,7 @@ class MovieTags(BaseTags):
 
 if __name__ == "__main__":
     path = Path(r"C:\Users\gerar\Desktop\The Martian.mkv")
-    movie_tags = MovieTags(path)
+    movie_tags = MovieTags()
     # print(movie_tags.extract_tags_as_dict(path))
     print(movie_tags.actors_characters)
     # movie_tags.extract_tags_file(path.with_suffix(".tags.xml"), True)

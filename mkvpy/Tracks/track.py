@@ -108,6 +108,9 @@ class Track(MKVToolNix):
 
     def extract(self, output_path: str | Path | None = None, overwrite: bool = False) -> None:
         """Extract the track to a file."""
+        extension = self.file_path.suffix.replace(".", "")
+        if extension in codecid_to_ext.values():
+            raise ValueError(f"File {self.file_path} is already an extracted file.")
         if self.type not in codecid_to_ext:
             raise TypeError(f"Unsupported track type: {self.type}. Cannot extract.")
         path = default_or_new_path(self.file_path.with_suffix(f".{codecid_to_ext[self.type]}"), output_path, overwrite)

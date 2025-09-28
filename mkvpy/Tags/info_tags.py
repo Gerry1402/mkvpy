@@ -25,13 +25,13 @@ info_tags: dict[str, dict[str, str | tuple | bool | int]] = {
     # TV Series
     "season": {"name": "TITLE", "unique": True, "target": 60},
     "season_number": {"name": "PART_NUMBER", "unique": True, "target": 60},
-    "episodes_season_number": {"name": "TOTAL_PARTS", "unique": True, "target": 60}, 
+    "episodes_season_number": {"name": "TOTAL_PARTS", "unique": True, "target": 60},
     # Target Type Value 50:
     # Movie
     "movie_number": {"name": "PART_NUMBER", "unique": True, "target": 50},
     "movie_imdb": {"name": "IMDB", "unique": True, "target": 50},
     "movie_tmdb": {"name": "TMDB", "unique": True, "target": 50},
-    "movie_tvdb": {"name": "TVDB2", "unique": True, "target": 50}, 
+    "movie_tvdb": {"name": "TVDB2", "unique": True, "target": 50},
     # TV Series
     "episode_number": {"name": "PART_NUMBER", "unique": True, "target": 50},
     "episode_imdb": {"name": "IMDB", "unique": True, "target": 50},
@@ -144,119 +144,68 @@ order_tags: list[str] = [
     "date_released",
 ]
 
-if set(info_tags.keys()) != set(order_tags):
-    raise ValueError("name_tags keys and ordered_tag_keys do not match")
-
-# Reverse lookup dictionary: target_int -> {TAG_NAME -> original_key}
-# Movie-specific tags_by_target: Collection (70) + Movie (50)
-movie_tags_by_target: dict[int, dict[str | tuple, dict]] = {
-    70: {
-        # Collection level tags
-        "TITLE": {"name": "collection", "unique": True, "target": 70},
-        "TOTAL_PARTS": {"name": "movies_number", "unique": True, "target": 70},
-        "IMDB": {"name": "collection_imdb", "unique": True, "target": 70},
-        "TMDB": {"name": "collection_tmdb", "unique": True, "target": 70},
-        "DESCRIPTION": {"name": "collection_description", "unique": True, "target": 70},
-        "SYNOPSIS": {"name": "collection_synopsis", "unique": True, "target": 70},
-        "SUMMARY": {"name": "collection_summary", "unique": True, "target": 70},
-    },
-    50: {
-        # Movie level tags
-        "PART_NUMBER": {"name": "movie_number", "unique": True, "target": 50},
-        "IMDB": {"name": "movie_imdb", "unique": True, "target": 50},
-        "TMDB": {"name": "movie_tmdb", "unique": True, "target": 50},
-        "TVDB2": {"name": "movie_tvdb", "unique": True, "target": 50},
-        # Common tags
-        "TITLE": {"name": "title", "unique": True, "target": 50},
-        "SUBTITLE": {"name": "subtitle", "unique": True, "target": 50},
-        ("ACTOR", "CHARACTER"): {"name": "actors_characters", "unique": False, "target": 50},
-        "DIRECTOR": {"name": "directors", "unique": False, "target": 50},
-        "WRITTEN_BY": {"name": "writers", "unique": False, "target": 50},
-        "SCREENPLAY_BY": {"name": "screenplayers", "unique": False, "target": 50},
-        "PRODUCER": {"name": "producers", "unique": False, "target": 50},
-        "EXECUTIVE_PRODUCER": {"name": "producers_executives", "unique": False, "target": 50},
-        "COPRODUCER": {"name": "coproducers", "unique": False, "target": 50},
-        "DIRECTOR_OF_PHOTOGRAPHY": {"name": "directors_photography", "unique": False, "target": 50},
-        "EDITOR": {"name": "editors", "unique": False, "target": 50},
-        "PRODUCTION_DESIGNER": {"name": "designers_production", "unique": False, "target": 50},
-        "COSTUME_DESIGNER": {"name": "designers_costume", "unique": False, "target": 50},
-        "ASSISTANT_DIRECTOR": {"name": "directors_assistant", "unique": False, "target": 50},
-        "MASTERED_BY": {"name": "mastering_engineers", "unique": False, "target": 50},
-        "PRODUCTION_STUDIO": {"name": "productions_studio", "unique": False, "target": 50},
-        "DISTRIBUTED_BY": {"name": "distributors", "unique": False, "target": 50},
-        "PUBLISHER": {"name": "publishers", "unique": False, "target": 50},
-        "RECORDING_LOCATION": {"name": "locations_recording", "unique": False, "target": 50},
-        "GENRE": {"name": "genres", "unique": False, "target": 50},
-        "RATING": {"name": "rating", "unique": True, "target": 50},
-        "CONTENT_TYPE": {"name": "content_type", "unique": True, "target": 50},
-        "SUBJECT": {"name": "subject", "unique": True, "target": 50},
-        "KEYWORDS": {"name": "keywords", "unique": False, "target": 50},
-        "MOOD": {"name": "moods", "unique": False, "target": 50},
-        "DESCRIPTION": {"name": "description", "unique": False, "target": 50},
-        "SYNOPSIS": {"name": "synopsis", "unique": False, "target": 50},
-        "SUMMARY": {"name": "summary", "unique": False, "target": 50},
-        "COMMENT": {"name": "comment", "unique": False, "target": 50},
-        "DATE_WRITTEN": {"name": "date_written", "unique": True, "target": 50},
-        "DATE_RELEASED": {"name": "date_released", "unique": True, "target": 50},
-    }
+common_tags_by_target: dict[str | tuple, dict] = {
+    "TITLE": {"name": "title", "unique": True},
+    "SUBTITLE": {"name": "subtitle", "unique": True},
+    ("ACTOR", "CHARACTER"): {"name": "actors_characters", "unique": False},
+    "DIRECTOR": {"name": "directors", "unique": False},
+    "WRITTEN_BY": {"name": "writers", "unique": False},
+    "SCREENPLAY_BY": {"name": "screenplayers", "unique": False},
+    "PRODUCER": {"name": "producers", "unique": False},
+    "EXECUTIVE_PRODUCER": {"name": "producers_executives", "unique": False},
+    "COPRODUCER": {"name": "coproducers", "unique": False},
+    "DIRECTOR_OF_PHOTOGRAPHY": {"name": "directors_photography", "unique": False},
+    "EDITOR": {"name": "editors", "unique": False},
+    "PRODUCTION_DESIGNER": {"name": "designers_production", "unique": False},
+    "COSTUME_DESIGNER": {"name": "designers_costume", "unique": False},
+    "ASSISTANT_DIRECTOR": {"name": "directors_assistant", "unique": False},
+    "MASTERED_BY": {"name": "mastering_engineers", "unique": False},
+    "PRODUCTION_STUDIO": {"name": "productions_studio", "unique": False},
+    "DISTRIBUTED_BY": {"name": "distributors", "unique": False},
+    "PUBLISHER": {"name": "publishers", "unique": False},
+    "RECORDING_LOCATION": {"name": "locations_recording", "unique": False},
+    "GENRE": {"name": "genres", "unique": False},
+    "RATING": {"name": "rating", "unique": True},
+    "CONTENT_TYPE": {"name": "content_type", "unique": True},
+    "SUBJECT": {"name": "subject", "unique": True},
+    "KEYWORDS": {"name": "keywords", "unique": False},
+    "MOOD": {"name": "moods", "unique": False},
+    "DESCRIPTION": {"name": "description", "unique": False},
+    "SYNOPSIS": {"name": "synopsis", "unique": False},
+    "SUMMARY": {"name": "summary", "unique": False},
+    "COMMENT": {"name": "comment", "unique": False},
+    "DATE_WRITTEN": {"name": "date_written", "unique": True},
+    "DATE_RELEASED": {"name": "date_released", "unique": True},
 }
 
-# Series-specific tags_by_target: Series (70) + Season (60) + Episode (50)
+level_70 = lambda text: {
+    "TITLE": {"name": f"{text}", "unique": True},
+    "IMDB": {"name": f"{text}_imdb", "unique": True},
+    "TMDB": {"name": f"{text}_tmdb", "unique": True},
+    "TVDB2": {"name": f"{text}_tvdb", "unique": True},
+    "DESCRIPTION": {"name": f"{text}_description", "unique": True},
+    "SYNOPSIS": {"name": f"{text}_synopsis", "unique": True},
+    "SUMMARY": {"name": f"{text}_summary", "unique": True},
+}
+
+level_50 = lambda text: {
+    "PART_NUMBER": {"name": f"{text}_number", "unique": True},
+    "IMDB": {"name": f"{text}_imdb", "unique": True},
+    "TMDB": {"name": f"{text}_tmdb", "unique": True},
+    "TVDB2": {"name": f"{text}_tvdb", "unique": True},
+}
+
+movie_tags_by_target: dict[int, dict[str | tuple, dict]] = {
+    70: {**level_70("collection"), "TOTAL_PARTS": {"name": "movies_number", "unique": True}},
+    50: {**level_50("movie"), **common_tags_by_target},
+}
+
 series_tags_by_target: dict[int, dict[str | tuple, dict]] = {
-    70: {
-        # Series level tags
-        "TITLE": {"name": "series", "unique": True, "target": 70},
-        "TOTAL_PARTS": {"name": "seasons_number", "unique": True, "target": 70},
-        "IMDB": {"name": "series_imdb", "unique": True, "target": 70},
-        "TMDB": {"name": "series_tmdb", "unique": True, "target": 70},
-        "TVDB2": {"name": "series_tvdb", "unique": True, "target": 70},
-        "DESCRIPTION": {"name": "series_description", "unique": True, "target": 70},
-        "SYNOPSIS": {"name": "series_synopsis", "unique": True, "target": 70},
-        "SUMMARY": {"name": "series_summary", "unique": True, "target": 70},
-    },
+    70: {**level_70("series"), "TOTAL_PARTS": {"name": "seasons_number", "unique": True}},
     60: {
-        # Season level tags
-        "TITLE": {"name": "season", "unique": True, "target": 60},
-        "PART_NUMBER": {"name": "season_number", "unique": True, "target": 60},
-        "TOTAL_PARTS": {"name": "episodes_season_number", "unique": True, "target": 60},
+        "TITLE": {"name": "season", "unique": True},
+        "PART_NUMBER": {"name": "season_number", "unique": True},
+        "TOTAL_PARTS": {"name": "episodes_season_number", "unique": True},
     },
-    50: {
-        # Episode level tags
-        "PART_NUMBER": {"name": "episode_number", "unique": True, "target": 50},
-        "IMDB": {"name": "episode_imdb", "unique": True, "target": 50},
-        "TMDB": {"name": "episode_tmdb", "unique": True, "target": 50},
-        "TVDB2": {"name": "episode_tvdb", "unique": True, "target": 50},
-        # Common tags (same as movie level 50)
-        "TITLE": {"name": "title", "unique": True, "target": 50},
-        "SUBTITLE": {"name": "subtitle", "unique": True, "target": 50},
-        ("ACTOR", "CHARACTER"): {"name": "actors_characters", "unique": False, "target": 50},
-        "DIRECTOR": {"name": "directors", "unique": False, "target": 50},
-        "WRITTEN_BY": {"name": "writers", "unique": False, "target": 50},
-        "SCREENPLAY_BY": {"name": "screenplayers", "unique": False, "target": 50},
-        "PRODUCER": {"name": "producers", "unique": False, "target": 50},
-        "EXECUTIVE_PRODUCER": {"name": "producers_executives", "unique": False, "target": 50},
-        "COPRODUCER": {"name": "coproducers", "unique": False, "target": 50},
-        "DIRECTOR_OF_PHOTOGRAPHY": {"name": "directors_photography", "unique": False, "target": 50},
-        "EDITOR": {"name": "editors", "unique": False, "target": 50},
-        "PRODUCTION_DESIGNER": {"name": "designers_production", "unique": False, "target": 50},
-        "COSTUME_DESIGNER": {"name": "designers_costume", "unique": False, "target": 50},
-        "ASSISTANT_DIRECTOR": {"name": "directors_assistant", "unique": False, "target": 50},
-        "MASTERED_BY": {"name": "mastering_engineers", "unique": False, "target": 50},
-        "PRODUCTION_STUDIO": {"name": "productions_studio", "unique": False, "target": 50},
-        "DISTRIBUTED_BY": {"name": "distributors", "unique": False, "target": 50},
-        "PUBLISHER": {"name": "publishers", "unique": False, "target": 50},
-        "RECORDING_LOCATION": {"name": "locations_recording", "unique": False, "target": 50},
-        "GENRE": {"name": "genres", "unique": False, "target": 50},
-        "RATING": {"name": "rating", "unique": True, "target": 50},
-        "CONTENT_TYPE": {"name": "content_type", "unique": True, "target": 50},
-        "SUBJECT": {"name": "subject", "unique": True, "target": 50},
-        "KEYWORDS": {"name": "keywords", "unique": False, "target": 50},
-        "MOOD": {"name": "moods", "unique": False, "target": 50},
-        "DESCRIPTION": {"name": "description", "unique": False, "target": 50},
-        "SYNOPSIS": {"name": "synopsis", "unique": False, "target": 50},
-        "SUMMARY": {"name": "summary", "unique": False, "target": 50},
-        "COMMENT": {"name": "comment", "unique": False, "target": 50},
-        "DATE_WRITTEN": {"name": "date_written", "unique": True, "target": 50},
-        "DATE_RELEASED": {"name": "date_released", "unique": True, "target": 50},
-    }
+    50: {**level_50("episode"), **common_tags_by_target},
 }

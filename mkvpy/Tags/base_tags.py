@@ -2,28 +2,27 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, Literal
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree as DefusedET
 
 from mkvpy import MKVToolNix
-from mkvpy.Tags.info_tags import info_tags, info_targets, order_tags, movie_tags_by_target, series_tags_by_target
+from mkvpy.Tags.info_tags import info_tags, info_targets, movie_tags_by_target, order_tags, series_tags_by_target
 from mkvpy.Tags.xml_utils import complex_tag, get_or_create_target, parse_single_tag, simple_tag
 from mkvpy.utils import check_file_path, temp_file, unique_path
-from typing import Literal
 
 
 class BaseTags(MKVToolNix):
 
     def __init__(
-        self, file_path: Path | str, language: str | None = None, style_tags: Literal["movie", "series"] = "movie"
+        self, file_path: Path | str | None = None, language: str | None = None, style_tags: Literal["movie", "series"] = "movie"
     ) -> None:
-        self.file_path: Path = check_file_path(file_path)
+        self.file_path: Path = check_file_path(file_path) if file_path else Path()
+        self._info_file = self.extract_tags_as_dict(self.file_path) if file_path else {}
         self.language: str = language or "und"
         self.style_tags: Literal["movie", "series"] = style_tags
-        self._info_file = self.extract_tags_as_dict(self.file_path)
 
     def load_tags_to_attributes(self) -> None:
         """Load extracted tags into instance attributes."""

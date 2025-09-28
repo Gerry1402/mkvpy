@@ -14,7 +14,7 @@ Features:
 """
 
 from .base_tags import BaseTags
-from .episodes import EpisodeTags
+from .series import SeriesTags
 from .movies import MovieTags
 
-__all__ = ["BaseTags", "MovieTags", "EpisodeTags"]
+__all__ = ["BaseTags", "MovieTags", "SeriesTags"]

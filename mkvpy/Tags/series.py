@@ -32,36 +32,36 @@ class SeriesTags(BaseTags):
         self.episode_tmdb: str = ""
         self.episode_tvdb: str = ""
 
-        # Cast (in order of appearance/importance) - KEPT AS IS
+        # Cast (in order of appearance/importance)
         self.actors_characters: list[tuple[str, str]] = []
 
-        # Key Creative Roles - KEPT AS IS
+        # Key Creative Roles
         self.directors: list[str] = []
         self.writers: list[str] = []
         self.screenplayers: list[str] = []
 
-        # Production Crew (in typical hierarchy) - KEPT AS IS
+        # Production Crew (in typical hierarchy)
         self.producers: list[str] = []
         self.producers_executives: list[str] = []
         self.coproducers: list[str] = []
 
-        # Department Heads - KEPT AS IS
+        # Department Heads
         self.directors_photography: list[str] = []
         self.editors: list[str] = []
         self.designers_production: list[str] = []
         self.designers_costume: list[str] = []
 
-        # Additional Crew - KEPT AS IS
+        # Additional Crew
         self.directors_assistant: list[str] = []
         self.mastering_engineers: list[str] = []
 
-        # Production & Distribution - KEPT AS IS
+        # Production & Distribution
         self.productions_studio: list[str] = []
         self.distributors: list[str] = []
         self.publishers: list[str] = []
         self.locations_recording: list[str] = []
 
-        # Content Classification & Metadata - KEPT AS IS
+        # Content Classification & Metadata
         self.genres: list[str] = []
         self.rating: float = 0.0
         self.content_type: str = ""
@@ -69,22 +69,18 @@ class SeriesTags(BaseTags):
         self.keywords: list[str] = []
         self.moods: list[str] = []
 
-        # Descriptions (in order of detail) - KEPT AS IS
+        # Descriptions (in order of detail)
         self.description: str = ""
         self.synopsis: str = ""
         self.summary: str = ""
         self.comment: str = ""
 
-        # Dates - KEPT AS IS
+        # Dates
         self.date_written: int = 0
         self.date_released: int = 0
-        
+
         self.load_tags_to_attributes()
 
     def _info_targets(self) -> dict[int, str]:
         """Return ordered series tag information."""
-        return {
-            70: "SERIES",
-            60: "SEASON",
-            50: "EPISODE",
-        }
+        return {70: "SERIES", 60: "SEASON", 50: "EPISODE"}
