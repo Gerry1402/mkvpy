@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from mkvpy.Tags.base_tags import BaseTags

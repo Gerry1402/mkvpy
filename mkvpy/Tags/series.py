@@ -3,60 +3,65 @@ from pathlib import Path
 from mkvpy.Tags.base_tags import BaseTags
 
 
-class MovieTags(BaseTags):
-    """Movie-specific tag management class."""
+class SeriesTags(BaseTags):
+    """Series-specific tag management class."""
 
     def __init__(self, file_path: Path, language_ietf: str = "und") -> None:
         super().__init__(file_path, language_ietf)
 
-        # Collection level properties
-        self.collection: str = ""
-        self.movies_number: int = 0
+        # Series level properties (changed from collection)
+        self.series: str = ""
+        self.seasons_number: int = 0
+        self.series_imdb: str = ""
+        self.series_tmdb: str = ""
+        self.series_tvdb: str = ""
+        self.series_description: str = ""
+        self.series_synopsis: str = ""
+        self.series_summary: str = ""
 
-        self.collection_imdb: str = ""
-        self.collection_tmdb: str = ""
-        self.collection_description: str = ""
-        self.collection_synopsis: str = ""
-        self.collection_summary: str = ""
+        # Season level properties (new for series)
+        self.season: str = ""
+        self.season_number: int = 0
+        self.episodes_season_number: int = 0
 
-        # Movie level properties
+        # Episode level properties (changed from movie)
         self.title: str = ""
         self.subtitle: str = ""
-        self.movie_number: int = 0
-        self.movie_imdb: str = ""
-        self.movie_tmdb: str = ""
-        self.movie_tvdb: str = ""
+        self.episode_number: int = 0
+        self.episode_imdb: str = ""
+        self.episode_tmdb: str = ""
+        self.episode_tvdb: str = ""
 
-        # Cast (in order of appearance/importance)
+        # Cast (in order of appearance/importance) - KEPT AS IS
         self.actors_characters: list[tuple[str, str]] = []
 
-        # Key Creative Roles
+        # Key Creative Roles - KEPT AS IS
         self.directors: list[str] = []
         self.writers: list[str] = []
         self.screenplayers: list[str] = []
 
-        # Production Crew (in typical hierarchy)
+        # Production Crew (in typical hierarchy) - KEPT AS IS
         self.producers: list[str] = []
         self.producers_executives: list[str] = []
         self.coproducers: list[str] = []
 
-        # Department Heads
+        # Department Heads - KEPT AS IS
         self.directors_photography: list[str] = []
         self.editors: list[str] = []
         self.designers_production: list[str] = []
         self.designers_costume: list[str] = []
 
-        # Additional Crew
+        # Additional Crew - KEPT AS IS
         self.directors_assistant: list[str] = []
         self.mastering_engineers: list[str] = []
 
-        # Production & Distribution
+        # Production & Distribution - KEPT AS IS
         self.productions_studio: list[str] = []
         self.distributors: list[str] = []
         self.publishers: list[str] = []
         self.locations_recording: list[str] = []
 
-        # Content Classification & Metadata
+        # Content Classification & Metadata - KEPT AS IS
         self.genres: list[str] = []
         self.rating: float = 0.0
         self.content_type: str = ""
@@ -64,26 +69,22 @@ class MovieTags(BaseTags):
         self.keywords: list[str] = []
         self.moods: list[str] = []
 
-        # Descriptions (in order of detail)
+        # Descriptions (in order of detail) - KEPT AS IS
         self.description: str = ""
         self.synopsis: str = ""
         self.summary: str = ""
         self.comment: str = ""
 
-        # Dates
+        # Dates - KEPT AS IS
         self.date_written: int = 0
         self.date_released: int = 0
         
         self.load_tags_to_attributes()
 
     def _info_targets(self) -> dict[int, str]:
-        """Return ordered movie tag information."""
-        return {70: "COLLECTION", 50: "MOVIE"}
-
-
-if __name__ == "__main__":
-    path = Path(r"C:\Users\gerar\Desktop\The Martian.mkv")
-    movie_tags = MovieTags(path)
-    # print(movie_tags.extract_tags_as_dict(path))
-    print(movie_tags.actors_characters)
-    # movie_tags.extract_tags_file(path.with_suffix(".tags.xml"), True)
+        """Return ordered series tag information."""
+        return {
+            70: "SERIES",
+            60: "SEASON",
+            50: "EPISODE",
+        }

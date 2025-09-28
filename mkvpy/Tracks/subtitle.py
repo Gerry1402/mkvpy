@@ -3,7 +3,7 @@ from pathlib import Path
 from mkvpy.Tracks.track import Track
 
 
-class Audio(Track):
+class Subtitle(Track):
     def __init__(
         self,
         file_path: str | Path,
@@ -15,16 +15,17 @@ class Audio(Track):
         sync: int = 0,
         # flags
         original: bool = False,
-        visual_impaired: bool = False,
+        text_description: bool = False,
+        hearing_impaired: bool = False,
         commentary: bool = False,
+        # additional properties
+        encoder: str = "",
     ):
         super().__init__(file_path, id_track, name, default, forced, sync)
+        self.encoder = encoder or self.info_track.get("properties", {}).get("encoding", "").lower()
         self.language: str = language or self.info_track["properties"].get("language", "und")
 
     @property
-    def channels(self) -> int:
-        return self.info_track.get("properties", {}).get("audio_channels", 0)
-
-    @property
-    def frequency(self) -> float:
-        return self.info_track.get("properties", {}).get("audio_sampling_frequency", 0)
+    def index_entries(self) -> int:
+        """Get the number of index entries in the subtitle track."""
+        return self.info_track.get("properties", {}).get("num_index_entries", 0)

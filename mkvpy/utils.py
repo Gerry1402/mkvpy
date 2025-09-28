@@ -1,30 +1,22 @@
+from __future__ import annotations
+
 import os
 import tempfile
-from collections.abc import KeysView
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Iterable
 
 
 def check_executable_path(executable_path: str | Path) -> Path | None:
+    executable_path = Path(executable_path)
 
-    executable_path = (
-        Path(executable_path)
-        if not isinstance(executable_path, Path)
-        else executable_path
-    )
-
-    if executable_path.exists() and executable_path.is_file():
-        return Path(executable_path)
-
-    return None
+    return executable_path if executable_path.is_file() and executable_path.exists() else None
 
 
 def check_file_path(file_path: str | Path) -> Path:
-    file_path = Path(file_path) if not isinstance(file_path, Path) else file_path
-
-    if file_path.exists() and file_path.is_file():
-        return Path(file_path)
+    file_path = Path(file_path)
+    if file_path.is_file() and file_path.exists():
+        return file_path
 
     raise FileNotFoundError(f"File '{file_path}' does not exist or is not a file.")
 
@@ -42,7 +34,16 @@ def unique_path(base_path: str | Path) -> Path:
         counter += 1
 
 
-def human_join(iterable: KeysView[Any] | list[Any] | tuple[Any] | set[Any]) -> str:
+def default_or_new_path(default_path: str | Path, new_path: str | Path | None, overwrite: bool) -> Path:
+    final_path = Path(new_path or default_path)
+
+    if not overwrite and final_path.exists():
+        final_path = unique_path(final_path)
+
+    return final_path
+
+
+def human_join(iterable: Iterable[str]) -> str:
     """Join an iterable of strings into a human-readable string."""
 
     sorted_list = sorted(iterable, key=str)
@@ -65,18 +66,3 @@ def temp_file(suffix, content: str = "", encoding="utf-8"):
         yield temp_path
     finally:
         temp_path.unlink(missing_ok=True)
-
-
-def string_to_number(s: str):
-    for action in [int, float, str]:
-        try:
-            action(s.strip())
-        except ValueError:
-            continue
-        else:
-            return action(s.strip())
-
-
-def number_to_string(number: int | float | str | None) -> str | None:
-    """Convert a number to a string, preserving its type."""
-    return str(number) if isinstance(number, (int, float)) else number
