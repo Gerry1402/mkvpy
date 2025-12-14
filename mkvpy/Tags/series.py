@@ -6,8 +6,9 @@ from mkvpy.Tags.base_tags import BaseTags
 class SeriesTags(BaseTags):
     """Series-specific tag management class."""
 
-    def __init__(self, file_path: Path, language_ietf: str = "und") -> None:
-        super().__init__(file_path, language_ietf)
+    def __init__(self, file_path: Path | None = None, language_ietf: str = "und") -> None:
+        super().__init__(file_path, language_ietf, "series")
+        self.style_tags: str = "series"
 
         # Series level properties (changed from collection)
         self.series: str = ""
@@ -79,7 +80,8 @@ class SeriesTags(BaseTags):
         self.date_written: int = 0
         self.date_released: int = 0
 
-        self.load_tags_to_attributes()
+        if self._file_path:
+            self.load_tags_to_attributes(self.extract_tags_as_dict(self._file_path))
 
     def _info_targets(self) -> dict[int, str]:
         """Return ordered series tag information."""

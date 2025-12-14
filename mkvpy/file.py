@@ -15,19 +15,14 @@ tags = {"movie": MovieTags, "series": SeriesTags}
 
 class MKVFile(MKVToolNix):
 
-    def __init__(self, file_path: str | Path | None = None, style_tags: Literal["movie", "series"] | None = None):
+    def __init__(self, file_path: str | Path | None = None, style_tags: Literal["movie", "series"] = "movie"):
 
-        if file_path:
-            self.file_path: Path | None = check_file_path(file_path)
-            self.info_file: dict[str, Any] = self.get_file_info(self.file_path)
-            self.tracks: list[Track] = [Track(self.file_path, i) for i in range(len(self.info_file.get("tracks", [])))]
-            self.tags: SeriesTags | MovieTags | None = tags[style_tags](self.file_path) if style_tags else None
-            self.chapters: Chapters | None = Chapters(self.file_path)
-        else:
-            self.file_path = None
-            self.tracks = []
-            self.tags = None
-            self.chapters = None
+        self.file_path: Path | None = check_file_path(file_path) if file_path else None
+        self.info_file: dict[str, Any] = self.get_file_info(self.file_path) if self.file_path else {}
+        self.title: str = self.info_file.get("container", {}).get("properties", {}).get("title", "")
+        self.tracks: list[Track] = [Track(self.file_path, i) for i in range(len(self.info_file.get("tracks", [])))] if self.file_path else []
+        self.tags: SeriesTags | MovieTags = tags[style_tags](self.file_path)
+        self.chapters: Chapters = Chapters(self.file_path)
 
         def _aux_tracks(self, file_path: str | Path, ids: Iterable[int] | None = None) -> list[Track]:
             file_path = check_file_path(file_path)
@@ -57,19 +52,30 @@ class MKVFile(MKVToolNix):
             self.set_tracks(file_path)
             self.set_tags(file_path, style_tags) if style_tags else None
             self.set_chapters(file_path)
+        
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}{f' source="{self.file_path.name}"' if self.file_path else ''} title=\"{self.title}\" tracks={len(self.tracks)} tags={len(self.tags)} chapters={len(self.chapters.names)}>"
 
 
 if __name__ == "__main__":
-    file = r"C:\Users\gerar\Desktop\The Martian.mkv"
-    mkv_file = MKVFile(file, "movie")
-    print(f"Number of tracks: {len(mkv_file.tracks)}")
-    for track in mkv_file.tracks:
-        print(track)
-    print(f"Number of chapters: {mkv_file.chapters.timestamps}")
-    print(mkv_file.chapters.names)
+    # file = r"C:\Users\gerar\Desktop\The Martian.mkv"
+    # mkv_file = MKVFile(file, "movie")
+    # print(f"Number of tracks: {len(mkv_file.tracks)}")
     # for track in mkv_file.tracks:
     #     print(track)
-    if mkv_file.tags:
-        print(mkv_file.tags)
-        for target, tag, value in mkv_file.tags:
-            print(f"{target}: {tag} = {value}")
+    # print(f"Number of chapters: {mkv_file.chapters.timestamps}")
+    # print(mkv_file.chapters.names)
+    # # for track in mkv_file.tracks:
+    # #     print(track)
+    # if mkv_file.tags:
+    #     print(mkv_file.tags)
+    #     for target, tag, value in mkv_file.tags:
+    #         print(f"{target}: {tag} = {value}")
+    mkv = MKVFile()
+    print(mkv)
+    mkv.tags.writers = ["Gerardo"]
+    if mkv.tags:
+        print(mkv.tags)
+        for tag, value in mkv.tags:
+            if value:
+                print(f"{tag} = {value}")

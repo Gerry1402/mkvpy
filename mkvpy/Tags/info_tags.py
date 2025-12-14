@@ -193,11 +193,12 @@ level_50 = lambda text: {
     "IMDB": {"name": f"{text}_imdb", "unique": True},
     "TMDB": {"name": f"{text}_tmdb", "unique": True},
     "TVDB2": {"name": f"{text}_tvdb", "unique": True},
+    **common_tags_by_target,
 }
 
 movie_tags_by_target: dict[int, dict[str | tuple, dict]] = {
     70: {**level_70("collection"), "TOTAL_PARTS": {"name": "movies_number", "unique": True}},
-    50: {**level_50("movie"), **common_tags_by_target},
+    50: level_50("movie"),
 }
 
 series_tags_by_target: dict[int, dict[str | tuple, dict]] = {
@@ -207,5 +208,5 @@ series_tags_by_target: dict[int, dict[str | tuple, dict]] = {
         "PART_NUMBER": {"name": "season_number", "unique": True},
         "TOTAL_PARTS": {"name": "episodes_season_number", "unique": True},
     },
-    50: {**level_50("episode"), **common_tags_by_target},
+    50: level_50("episode"),
 }

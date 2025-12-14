@@ -7,7 +7,7 @@ class MovieTags(BaseTags):
     """Movie-specific tag management class."""
 
     def __init__(self, file_path: Path | None = None, language_ietf: str = "und") -> None:
-        super().__init__(file_path, language_ietf)
+        super().__init__(file_path, language_ietf, "movie")
 
         # Collection level properties
         self.collection: str = ""
@@ -73,8 +73,10 @@ class MovieTags(BaseTags):
         # Dates
         self.date_written: int = 0
         self.date_released: int = 0
+        
 
-        self.load_tags_to_attributes()
+        if self._file_path:
+            self.load_tags_to_attributes(self.extract_tags_as_dict(self._file_path))
 
     def _info_targets(self) -> dict[int, str]:
         """Return ordered movie tag information."""
@@ -82,8 +84,11 @@ class MovieTags(BaseTags):
 
 
 if __name__ == "__main__":
-    path = Path(r"C:\Users\gerar\Desktop\The Martian.mkv")
+    path1 = Path(r"C:\Users\gerar\Desktop\The Martian.mkv")
+    path2 = Path(r"C:\Users\gerar\Desktop\Harry Potter 3 - The Prisoner of Azkaban.mkv")
     movie_tags = MovieTags()
+    print(movie_tags)
     # print(movie_tags.extract_tags_as_dict(path))
     print(movie_tags.actors_characters)
     # movie_tags.extract_tags_file(path.with_suffix(".tags.xml"), True)
+    print(movie_tags.execute_command("extract", path1, "chapters", "--simple"))
